@@ -21,16 +21,16 @@ phases:
       - echo Build started on `date`
       - docker build -t $IMAGE_REPO_NAME .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
-  post_build:
-    commands:
-      - echo Build completed on `date`
-      - echo Pushing Docker image to ECR...
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Updating Kubernetes deployment...
-      - kubectl patch serviceaccount default -n $K8S_NAMESPACE -p '{"imagePullSecrets":[{"name":"ecr-secret"}]}'
-      - kubectl set image deployment/$K8S_DEPLOYMENT_NAME $K8S_CONTAINER_NAME=$REPOSITORY_URI:$IMAGE_TAG -n $K8S_NAMESPACE
-      - kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_NAMESPACE
-      - echo Deployment completed successfully!
+ post_build:
+  commands:
+    - echo Build completed on `date`
+    - docker push $REPOSITORY_URI:$IMAGE_TAG
+    - echo Updating Kubernetes deployment...
+    - kubectl patch serviceaccount default -n $K8S_NAMESPACE -p "{\"imagePullSecrets\":[{\"name\":\"ecr-secret\"}]}"
+    - kubectl set image deployment/$K8S_DEPLOYMENT_NAME $K8S_CONTAINER_NAME=$REPOSITORY_URI:$IMAGE_TAG -n $K8S_NAMESPACE
+    - kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_NAMESPACE
+    - echo Deployment completed successfully!
+
 
 artifacts:
   files:
