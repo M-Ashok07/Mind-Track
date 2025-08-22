@@ -2,44 +2,36 @@ version: 0.2
 
 env:
   variables:
-    CLUSTER_NAME: "brain-tasks-cluster-1"
-    AWS_REGION: "ap-south-1"
-    IMAGE_REPO_NAME: "brain-task-app"
-    AWS_ACCOUNT_ID: "304534110140"
+    IMAGE_REPO_NAME: brain-task-app
+    IMAGE_TAG: latest
+    REPOSITORY_URI: 304534110140.dkr.ecr.ap-south-1.amazonaws.com/brain-task-app
+    K8S_DEPLOYMENT_NAME: brain-tasks-deployment
+    K8S_CONTAINER_NAME: brain-tasks
+    K8S_NAMESPACE: default  # Change if you use a different namespace
 
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - echo Logging into EKS cluster...
-      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REPOSITORY_URI
+      - echo Ensure EKS config is set
+      - aws eks update-kubeconfig --region ap-south-1 --name brain-tasks-cluster-1
   build:
     commands:
-      - echo Building Docker image...
+      - echo Build started on `date`
       - docker build -t $IMAGE_REPO_NAME .
-      - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:$IMAGE_TAG
-      - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:latest
-
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
+      - echo Build completed on `date`
       - echo Pushing Docker image to ECR...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - docker push $REPOSITORY_URI:latest
-
       - echo Updating Kubernetes deployment...
-      - kubectl set image deployment/brain-tasks-deployment brain-tasks=$REPOSITORY_URI:$IMAGE_TAG --record
-
-      - kubectl apply -f k8s/service.yaml
-      - kubectl apply -f k8s/ingress.yaml
-
-      - echo Deployment updated successfully.
+      - kubectl patch serviceaccount default -n $K8S_NAMESPACE -p '{"imagePullSecrets":[{"name":"ecr-secret"}]}'
+      - kubectl set image deployment/$K8S_DEPLOYMENT_NAME $K8S_CONTAINER_NAME=$REPOSITORY_URI:$IMAGE_TAG -n $K8S_NAMESPACE
+      - kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_NAMESPACE
+      - echo Deployment completed successfully!
 
 artifacts:
   files:
-    - k8s/*.yaml
-      
+    - '**/*'
