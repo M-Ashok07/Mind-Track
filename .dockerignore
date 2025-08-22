@@ -1,0 +1,7 @@
+Dockerfile
+buildspec.yml
+k8s/
+awscliv2.zip
+eksctl_Linux_amd64.tar.gz
+kubectl
+iam_policy.json

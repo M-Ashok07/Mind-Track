@@ -5,7 +5,7 @@ FROM nginx:alpine
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy build files from dist/ to nginx html directory
-COPY dist/ /usr/share/nginx/html/
+COPY . /usr/share/nginx/html/
 
 # Expose default nginx port
 EXPOSE 80
