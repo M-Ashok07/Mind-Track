@@ -6,9 +6,6 @@ env:
     AWS_REGION: "ap-south-1"
     IMAGE_REPO_NAME: "brain-task-app"
     AWS_ACCOUNT_ID: "304534110140"
-  exported-variables:
-    - REPOSITORY_URI
-    - IMAGE_TAG
 
 phases:
   pre_build:
@@ -17,30 +14,22 @@ phases:
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:-latest}
-      - echo "Repository URI: $REPOSITORY_URI"
-      - echo "Image Tag: $IMAGE_TAG"
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
       - echo Logging into EKS cluster...
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-
   build:
     commands:
       - echo Building Docker image...
-      - ls -la  # Sanity check
-      - cat Dockerfile  # Show contents if needed
       - docker build -t $IMAGE_REPO_NAME .
       - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:latest
-
   post_build:
     commands:
       - echo Pushing Docker image to ECR...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
       - echo Updating Kubernetes deployment...
-      - echo "Replacing image tag in deployment.yaml..."
-      - sed -i "s|<IMAGE_URI>|$REPOSITORY_URI:$IMAGE_TAG|" k8s/deployment.yaml
-      - cat k8s/deployment.yaml  # Debug
+      - sed -i "s|<AWS_ACCOUNT_ID>.dkr.ecr.<region>.amazonaws.com/$IMAGE_REPO_NAME:latest|$REPOSITORY_URI:$IMAGE_TAG|" k8s/deployment.yaml
       - kubectl apply -f k8s/deployment.yaml
       - kubectl apply -f k8s/service.yaml
       - kubectl apply -f k8s/ingress.yaml
