@@ -1,0 +1,17 @@
+version: 0.0
+Resources:
+  - myLambdaFunction:
+      Type: AWS::Lambda::Function
+      Properties:
+        Name: "your-lambda-function-name"  # Replace this
+        Alias: "prod"                      # Replace if your alias is different
+Hooks:
+  BeforeAllowTraffic:
+    - location: scripts/before_allow_traffic.sh
+      timeout: 60
+      runas: root
+  AfterAllowTraffic:
+    - location: scripts/after_allow_traffic.sh
+      timeout: 60
+      runas: root
+
