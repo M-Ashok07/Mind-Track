@@ -32,7 +32,7 @@ phases:
       - docker push $REPOSITORY_URI:latest
 
       - echo Updating Kubernetes deployment...
-      - kubectl set image deployment/brain-tasks-deployment brain-tasks-container=$REPOSITORY_URI:$IMAGE_TAG --record
+      - kubectl set image deployment/brain-tasks-deployment brain-tasks=$REPOSITORY_URI:$IMAGE_TAG --record
 
       - kubectl apply -f k8s/service.yaml
       - kubectl apply -f k8s/ingress.yaml
