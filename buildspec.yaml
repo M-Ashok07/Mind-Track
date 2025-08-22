@@ -12,25 +12,17 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-      - echo "Docker login exit code: $?"
       - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
-      - echo "Repository URI is $REPOSITORY_URI"
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
       - echo Logging into EKS cluster...
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-
   build:
     commands:
-      - echo "Listing current directory:"
-      - ls -la
-      - echo "Listing dist directory:"
-      - ls -la dist/
       - echo Building Docker image...
       - docker build -t $IMAGE_REPO_NAME .
       - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:latest
-
   post_build:
     commands:
       - echo Pushing Docker image to ECR...
@@ -45,3 +37,6 @@ phases:
 artifacts:
   files:
     - k8s/*.yaml
+
+
+
