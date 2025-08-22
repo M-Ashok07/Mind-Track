@@ -8,7 +8,7 @@ env:
     AWS_ACCOUNT_ID: "304534110140"
 
 phases:
-  pre_build:
+    pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
@@ -17,6 +17,12 @@ phases:
       - IMAGE_TAG=${COMMIT_HASH:=latest}
       - echo Logging into EKS cluster...
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+      # 👇 debug check
+      - echo "==== Repo root ===="
+      - ls -R
+      - echo "==== Dist folder ===="
+      - ls -R dist || echo "dist missing!"
+
   build:
     commands:
       - echo Building Docker image...
