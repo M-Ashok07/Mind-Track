@@ -3,7 +3,7 @@ version: 0.2
 env:
   variables:
     CLUSTER_NAME: "brain-tasks-cluster-1"
-    AWS_REGION: "us-south-1"
+    AWS_REGION: "ap-south-1"
     IMAGE_REPO_NAME: "brain-task-app"
     AWS_ACCOUNT_ID: "304534110140"
 
